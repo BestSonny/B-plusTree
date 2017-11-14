@@ -1,0 +1,11 @@
+#   Variables for compilation of c/c++ files
+
+CXX     =   g++                            # Compiler
+CXXFLAGS=   -std=c++11 -o3
+OFLAG   =   -o                             # O/p Flag
+
+#   Variable for filenames
+
+HEADER       =   src/utils.h    # Header file name
+MAIN         =   src/main.cpp src/BplusTree.cpp src/utils.cpp     # Filename having main method
+OUTPUT       =   treesearch          # Executable file name
