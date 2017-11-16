@@ -36,22 +36,27 @@ int main(int argc, char* argv[]) {
         bt.getRange(stof(elems.at(1)), stof(elems.at(1)), res);
         if (res.size() == 0) {
           std::cout << "Null" << std::endl;
-          // myfile << "Null" << std::endl;
+          myfile << "Null" << std::endl;
         } else {
           multimap<float, string>::iterator it;
-          for (it = res.begin(); it != res.end(); ++it)
+          for (it = res.begin(); it != res.end(); ++it){
             std::cout << it->second << ", ";
-          // myfile.seekp(-2,myfile.cur);
+            myfile << it->second << ", ";
+          }
+          myfile.seekp(-2,myfile.cur);
+          myfile  << std::endl;
           std::cout << std::endl;
         }
       } else {
           multimap<float, string> res;
           bt.getRange(stof(elems.at(1)), stof(elems.at(2)), res);
           multimap<float, string>::iterator it;
-          for (it = res.begin(); it != res.end(); ++it)
-            // myfile << "(" << it->first << ", " << it->second << "), ";
+          for (it = res.begin(); it != res.end(); ++it){
+            myfile << "(" << it->first << ", " << it->second << "), ";
             std::cout << "(" << it->first << ", " << it->second << "), ";
-          // myfile.seekp(-2,myfile.cur);
+          }
+          myfile.seekp(-2,myfile.cur);
+          myfile  << std::endl;
           std::cout << std::endl;
       }
     } else {
