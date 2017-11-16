@@ -19,7 +19,21 @@ int main(int argc, char* argv[]) {
   string value;
   string r;
   ofstream myfile("output_file.txt", std::ofstream::out);
-  BPlusTree<float, string, 5, 5> bt;
+
+  if(!file){
+    cout << "open file error" << endl;
+    exit(0);
+  }
+  getline(file, linebuffer);
+  split(linebuffer, DELIMITERS, elems);
+  assert (stoi(elems.at(0)) > 0);
+  unsigned int order = stoi(elems.at(0));
+  if(order > 100){
+    cout << "please set a smaller order" << endl;
+    exit(0);
+  }
+  BPlusTree<float, string> bt(order, order);
+  elems.clear();
   while (file && getline(file, linebuffer)) {
     if (linebuffer.length() == 0) continue;
     split(linebuffer, DELIMITERS, elems);

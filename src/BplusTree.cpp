@@ -11,22 +11,24 @@
 using std::cout;
 using std::endl;
 
+#define MAX_CHILDREN 100
 
-template <typename KEY, typename VALUE, unsigned N, unsigned M>
+template <typename KEY, typename VALUE>
 class BPlusTree
 {
 public:
 	// N must be greater than two to make the split of
 	// two inner nodes sensible.
-	static_assert(N>2, "N must be greater than two");
-	// Leaf nodes must be able to hold at least one element
-	static_assert(M>0, "Leaf nodes must be able to hold at least one element");
+
 
 	// Builds a new empty tree.
-	BPlusTree()
-	: depth(0),
-	  root(new_leaf_node())
+	BPlusTree(unsigned N, unsigned M)
+	: depth(0), N(N), M(M),
+	  root(new_leaf_node(M))
 	{
+		assert(N>2);
+		// Leaf nodes must be able to hold at least one element
+		assert(M>0);
 		// DEBUG
 		// cout << "sizeof(LeafNode)==" << sizeof(LeafNode) << endl;
 		// cout << "sizeof(InnerNode)==" << sizeof(InnerNode) << endl;
@@ -55,7 +57,7 @@ public:
 			// The old root was splitted in two parts.
 			// We have to create a new root pointing to them
 			depth++;
-			root= new_inner_node();
+			root= new_inner_node(N);
 			InnerNode* rootProxy=
 				reinterpret_cast<InnerNode*>(root);
 			rootProxy->num_keys= 1;
@@ -107,43 +109,57 @@ private:
 	// Leaf nodes store pairs of keys and values.
 	struct LeafNode {
 #ifdef DEBUG
-		LeafNode() : type(NODE_LEAF), num_keys(0) {}
+		LeafNode(unsigned M) : type(NODE_LEAF), num_keys(0) {
+			this->M = M;
+		}
 		const NodeType type;
 #else
-		LeafNode() : num_keys(0) {}
+		LeafNode(unsigned M) : num_keys(0) {
+			this->M = M;
+			this->keys = new KEY[M];
+			this->values = new VALUE[M];
+		}
 #endif
 		unsigned num_keys;
-		KEY      keys[M];
-		VALUE    values[M];
+		KEY      *keys;
+		VALUE    *values;
+		unsigned M;
 	};
 
 	// Inner nodes store pointers to other nodes interleaved with keys.
 	struct InnerNode {
 #ifdef DEBUG
-		InnerNode() : type(NODE_INNER), num_keys(0) {}
+		InnerNode(unsigned N) : type(NODE_INNER), num_keys(0) {
+			this->N = N;
+			this->keys = new KEY[N];
+		}
 		const NodeType type;
 #else
-		InnerNode() : num_keys(0) {}
+		InnerNode(unsigned N) : num_keys(0) {
+			this->N = N;
+			this->keys = new KEY[N];
+		}
 #endif
 		unsigned num_keys;
-		KEY      keys[N];
-		void*    children[N+1];
+		unsigned N;
+		KEY      *keys;
+		void     *children[MAX_CHILDREN];
 	};
 
 	// Returns a pointer to a fresh leaf node.
-	LeafNode* new_leaf_node() {
+	LeafNode* new_leaf_node(unsigned M) {
 		LeafNode* result;
 		//result= new LeafNode();
-		result= new LeafNode();
+		result= new LeafNode(M);
 		//cout << "New LeafNode at " << result << endl;
 		return result;
 	}
 
 	// Returns a pointer to a fresh inner node.
-	InnerNode* new_inner_node() {
+	InnerNode* new_inner_node(unsigned N) {
 		InnerNode* result;
 		// Alternatively: result= new InnerNode();
-		result= new InnerNode();
+		result= new InnerNode(N);
 		//cout << "New InnerNode at " << result << endl;
 		return result;
 	}
@@ -191,7 +207,7 @@ private:
 		if( node->num_keys == M ) {
 			// The node was full. We must split it
 			unsigned treshold= (M+1)/2;
-			LeafNode* new_sibling= new_leaf_node();
+			LeafNode* new_sibling= new_leaf_node(M);
 			new_sibling->num_keys= node->num_keys -treshold;
 			for(unsigned j=0; j < new_sibling->num_keys; ++j) {
 				new_sibling->keys[j]= node->keys[treshold+j];
@@ -219,7 +235,7 @@ private:
 		return was_split;
 	}
 
-	static void leaf_insert_nonfull(LeafNode* node, KEY& key, VALUE& value,
+	void leaf_insert_nonfull(LeafNode* node, KEY& key, VALUE& value,
 			unsigned index) {
 		assert( node->num_keys < M );
 		assert( index <= M );
@@ -250,7 +266,7 @@ private:
 		if( node->num_keys == N ) {
 			// Split
 			unsigned treshold= (N+1)/2;
-			InnerNode* new_sibling= new_inner_node();
+			InnerNode* new_sibling= new_inner_node(N);
 			new_sibling->num_keys= node->num_keys -treshold;
 			for(unsigned i=0; i < new_sibling->num_keys; ++i) {
 				new_sibling->keys[i]= node->keys[treshold+i];
@@ -324,6 +340,9 @@ private:
 
 	// Depth of the tree. A tree of depth 0 only has a leaf node.
 	unsigned depth;
+
+	unsigned N;
+	unsigned M;
 	// Pointer to the root node. It may be a leaf or an inner node, but
 	// it is never null.
 	void*    root;
