@@ -11,7 +11,7 @@
 using std::cout;
 using std::endl;
 
-#define MAX_CHILDREN 100
+#define MAX_CHILDREN 300
 
 template <typename KEY, typename VALUE>
 class BPlusTree
@@ -72,7 +72,19 @@ public:
     register void* node= root;
     register unsigned d= depth;
     inner= reinterpret_cast<InnerNode*>(node);
-    windowQuery(inner, d, key1, key2, res);
+		if(depth==0){
+			LeafNode* leaf = reinterpret_cast<LeafNode*>(root);
+			int index;
+			while(index < leaf->num_keys) {
+				if(leaf->keys[index] >= key1 && leaf->keys[index] <= key2) {
+					res.insert(std::pair<KEY, VALUE>(leaf->keys[index], leaf->values[index]));
+				}
+				++index;
+			}
+		}else{
+			windowQuery(inner, d, key1, key2, res);
+		}
+
   }
 
   void windowQuery(void* node, int depth, const KEY& key1, const KEY& key2, std::multimap<KEY, VALUE>& res){
