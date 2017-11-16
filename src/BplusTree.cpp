@@ -6,7 +6,6 @@
 #include <stack>
 #include <assert.h>
 #include <type_traits>
-// DEBUG
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -17,8 +16,6 @@ template <typename KEY, typename VALUE>
 class BPlusTree
 {
 public:
-	// N must be greater than two to make the split of
-	// two inner nodes sensible.
 
 
 	// Builds a new empty tree.
@@ -26,21 +23,19 @@ public:
 	: depth(0), N(N), M(M),
 	  root(new_leaf_node(M))
 	{
+		// N must be greater than two to make the split of
+		// two inner nodes sensible.
 		assert(N>2);
 		// Leaf nodes must be able to hold at least one element
 		assert(M>0);
-		// DEBUG
-		// cout << "sizeof(LeafNode)==" << sizeof(LeafNode) << endl;
-		// cout << "sizeof(InnerNode)==" << sizeof(InnerNode) << endl;
 	}
 
 	~BPlusTree() {
-		// Empty. Memory deallocation is done automatically
-		// when innerPool and leafPool are destroyed.
+		;
 	}
 
 	// Inserts a pair (key, value). If there is a previous pair with
-	// the same key, the old value is overwritten with the new one.
+	// the same key, we will still insert the new one.
 	void insert(KEY key, VALUE value) {
 		InsertionResult result;
 		bool was_split;
@@ -67,11 +62,13 @@ public:
 		}
 	}
 
+	// Search for all values in a range of (key1, key2), and store them in res
   void getRange(const KEY& key1, const KEY& key2, std::multimap<KEY, VALUE>& res) {
     InnerNode* inner;
     register void* node= root;
     register unsigned d= depth;
     inner= reinterpret_cast<InnerNode*>(node);
+		// if depth is 0. directly search in its leaf nodes
 		if(depth==0){
 			LeafNode* leaf = reinterpret_cast<LeafNode*>(root);
 			int index;
@@ -81,14 +78,18 @@ public:
 				}
 				++index;
 			}
-		}else{
+		}
+		//Recursively traverse leaf nodes within the range of (key1, key2)
+		else{
 			windowQuery(inner, d, key1, key2, res);
 		}
 
   }
 
+	//Recursively traverse leaf nodes within the range of (key1, key2)
   void windowQuery(void* node, int depth, const KEY& key1, const KEY& key2, std::multimap<KEY, VALUE>& res){
     InnerNode* inner;
+		// the node's children is leaf nodes
     if( depth-1 == 0 ){
       inner= reinterpret_cast<InnerNode*>(node);
       // The children are leaf nodes
@@ -102,7 +103,9 @@ public:
           ++index;
         }
       }
-    }else{
+    }
+		// Otherwise, Recursive query on the subtrees.
+		else{
       inner= reinterpret_cast<InnerNode*>(node);
       int index_lower = inner_position_for(key1, inner->keys, inner->num_keys);
       int index_higher = inner_position_for(key2, inner->keys, inner->num_keys);
@@ -115,23 +118,15 @@ public:
   }
 
 private:
-	// Used when debugging
-	enum NodeType {NODE_INNER=0xDEADBEEF, NODE_LEAF=0xC0FFEE};
 
 	// Leaf nodes store pairs of keys and values.
 	struct LeafNode {
-#ifdef DEBUG
-		LeafNode(unsigned M) : type(NODE_LEAF), num_keys(0) {
-			this->M = M;
-		}
-		const NodeType type;
-#else
 		LeafNode(unsigned M) : num_keys(0) {
 			this->M = M;
 			this->keys = new KEY[M];
 			this->values = new VALUE[M];
 		}
-#endif
+
 		unsigned num_keys;
 		KEY      *keys;
 		VALUE    *values;
@@ -140,18 +135,10 @@ private:
 
 	// Inner nodes store pointers to other nodes interleaved with keys.
 	struct InnerNode {
-#ifdef DEBUG
-		InnerNode(unsigned N) : type(NODE_INNER), num_keys(0) {
-			this->N = N;
-			this->keys = new KEY[N];
-		}
-		const NodeType type;
-#else
 		InnerNode(unsigned N) : num_keys(0) {
 			this->N = N;
 			this->keys = new KEY[N];
 		}
-#endif
 		unsigned num_keys;
 		unsigned N;
 		KEY      *keys;
